@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#2C1A0F">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ZeroFile QR">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <title>ZeroFile QR | Adobe-Inspired PWA</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --adobe-bg: #F9F6F0;
+      --adobe-card: #FFFFFF;
+      --adobe-accent: #D97706;
+      --adobe-accent-dark: #B45309;
+      --adobe-deep: #2C1A0F;
+      --adobe-soft: #FFF7ED;
+      --adobe-border: #F0E7DB;
+      --adobe-muted: #8B6F5C;
+      --adobe-text: #3B2A1F;
+      --adobe-danger: #B91C1C;
+      --shadow-sm: 0 8px 20px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 20px 35px -12px rgba(0, 0, 0, 0.12);
+      --shadow-lg: 0 25px 40px -12px rgba(0, 0, 0, 0.2);
+    }
+
+    body {
+      background: linear-gradient(145deg, #FCF8F2 0%, #F5EDE3 100%);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+      color: var(--adobe-text);
+      padding-bottom: 80px;
+      min-height: 100vh;
+    }
+
+    /* custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #EBE3D8; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: var(--adobe-accent); border-radius: 10px; }
+
+    .glass-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(255, 251, 245, 0.92);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(217, 119, 6, 0.15);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo-area h4 {
+      font-size: 11px;
+      letter-spacing: 1.2px;
+      font-weight: 700;
+      color: var(--adobe-accent);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .logo-area h2 {
+      font-size: 1.65rem;
+      font-weight: 650;
+      background: linear-gradient(135deg, #2C1A0F, #B45309);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    .toggle-group {
+      display: flex;
+      gap: 12px;
+      background: rgba(217, 119, 6, 0.08);
+      padding: 6px 12px;
+      border-radius: 48px;
+      backdrop-filter: blur(4px);
+    }
+
+    .toggle-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      background: transparent;
+      padding: 6px 14px;
+      border-radius: 32px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .toggle-pill.active {
+      background: var(--adobe-accent);
+      color: white;
+      box-shadow: 0 4px 8px rgba(217, 119, 6, 0.3);
+    }
+
+    .toggle-pill input {
+      display: none;
+    }
+
+    main {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 20px;
+    }
+
+    .page {
+      display: none;
+      animation: fadeUp 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Adobe PDF inspired card */
+    .adobe-card {
+      background: var(--adobe-card);
+      border-radius: 32px;
+      padding: 28px;
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--adobe-border);
+      transition: transform 0.2s;
+    }
+
+    .qr-glass-stage {
+      background: var(--adobe-card);
+      border-radius: 40px;
+      padding: 28px;
+      box-shadow: var(--shadow-lg);
+      text-align: center;
+      border: 1px solid rgba(217, 119, 6, 0.2);
+    }
+
+    .qr-preview {
+      background: #FFFFFF;
+      border-radius: 32px;
+      padding: 20px;
+      display: inline-flex;
+      justify-content: center;
+      margin: 12px auto;
+      box-shadow: inset 0 0 0 1px #F0E2D0, 0 20px 35px -12px rgba(0,0,0,0.1);
+    }
+
+    .delay-control {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      background: #FEF7E9;
+      padding: 14px 20px;
+      border-radius: 80px;
+      margin: 20px 0 16px;
+      flex-wrap: wrap;
+    }
+
+    .delay-control label {
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .delay-slider {
+      width: 180px;
+      accent-color: var(--adobe-accent);
+    }
+
+    .button-group {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      background: linear-gradient(105deg, var(--adobe-accent), #F59E0B);
+      border: none;
+      padding: 14px 28px;
+      border-radius: 48px;
+      font-weight: 700;
+      color: white;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: 0.2s;
+      box-shadow: 0 6px 14px rgba(217, 119, 6, 0.3);
+    }
+
+    .btn-secondary {
+      background: #F3EDE4;
+      border: 1px solid #E6D9CC;
+      padding: 14px 24px;
+      border-radius: 48px;
+      font-weight: 600;
+      color: var(--adobe-deep);
+      cursor: pointer;
+    }
+
+    .qr-grid-modern {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 24px;
+      margin-top: 24px;
+    }
+
+    .qr-card-modern {
+      background: white;
+      border-radius: 28px;
+      padding: 18px;
+      cursor: grab;
+      transition: all 0.2s;
+      border: 1px solid #F2E8DE;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .qr-card-modern:active { cursor: grabbing; }
+    .qr-card-modern.dragging { opacity: 0.4; cursor: grabbing; }
+
+    .master-sort-area {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .master-sort-item {
+      background: white;
+      border-radius: 24px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      transition: all 0.2s;
+      border-left: 6px solid var(--adobe-accent);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+      cursor: grab;
+    }
+
+    .drag-handle {
+      font-size: 24px;
+      cursor: grab;
+      color: var(--adobe-muted);
+      user-select: none;
+    }
+
+    .key-handover-badge {
+      background: #2C1A0F;
+      color: #FFE4C4;
+      padding: 8px 20px;
+      border-radius: 40px;
+      font-weight: 600;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .bottom-dock {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(255, 250, 242, 0.96);
+      backdrop-filter: blur(20px);
+      display: flex;
+      justify-content: space-evenly;
+      padding: 10px 20px 22px;
+      border-top: 1px solid rgba(217,119,6,0.2);
+      z-index: 30;
+    }
+
+    .nav-icon {
+      background: none;
+      border: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      font-size: 12px;
+      color: #9B7B62;
+      transition: 0.2s;
+      padding: 8px 16px;
+      border-radius: 40px;
+    }
+
+    .nav-icon.active-nav {
+      background: var(--adobe-accent);
+      color: white;
+      box-shadow: 0 4px 12px rgba(217,119,6,0.3);
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(5px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      visibility: hidden;
+      opacity: 0;
+      transition: 0.2s;
+    }
+
+    .modal-overlay.active { visibility: visible; opacity: 1; }
+
+    .full-qr-view {
+      background: white;
+      max-width: 480px;
+      width: 90%;
+      border-radius: 48px;
+      padding: 32px;
+      text-align: center;
+    }
+
+    @media (max-width: 640px) {
+      .glass-header { padding: 12px 18px; }
+      .logo-area h2 { font-size: 1.3rem; }
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+
+<div id="welcomeOverlay" class="modal-overlay active">
+  <div class="full-qr-view" style="background: #FFF9F2;">
+    <div style="width: 72px; height: 72px; background: linear-gradient(135deg, #D97706, #F59E0B); border-radius: 24px; margin: 0 auto 18px;"></div>
+    <h2 style="font-size: 28px;">ZeroFile QR</h2>
+    <p style="margin: 12px 0 24px;">Adobe‑inspired • Reorderable • Auto‑timeline</p>
+    <button class="btn-primary" id="openZeroFileBtn" style="margin-bottom: 12px;">✨ Zero File Mode</button>
+    <button class="btn-secondary" id="openLibraryOnlyBtn">📚 QR Library Only</button>
+    <button class="btn-secondary" id="keyHandoverBtn" style="margin-top: 12px;">🔑 KEY HANDOVER</button>
+  </div>
+</div>
+
+<header class="glass-header">
+  <div class="logo-area">
+    <h4>ZERO FILE • ADOBE EDITION</h4>
+    <h2 id="pageDynamicTitle">QR Timeline</h2>
+  </div>
+  <div class="toggle-group">
+    <label class="toggle-pill" id="toggleZeroFileMode">
+      <input type="radio" name="viewMode" value="zero"> ◇ Zero File
+    </label>
+    <label class="toggle-pill" id="toggleHomeMode">
+      <input type="radio" name="viewMode" value="home" checked> 🏠 Home
+    </label>
+  </div>
+</header>
+
+<main>
+  <!-- HOME PAGE -->
+  <section id="homePage" class="page">
+    <div class="adobe-card">
+      <h2 style="font-size: 2rem;">Adobe ZeroFile Suite</h2>
+      <p style="margin: 12px 0 18px; color: var(--adobe-muted);">Reorderable QR flow • Auto slideshow with custom delay • Drag & drop master sorting</p>
+      <div class="button-group">
+        <button class="btn-primary" onclick="window.showPage('zeroPage')">▶ Start Zero Slide</button>
+        <button class="btn-secondary" onclick="window.showPage('libraryPage')">🗂️ Gallery View</button>
+        <button class="btn-secondary" onclick="window.showPage('masterPage')">🎛️ Reorder Master</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ZERO FILE SLIDE PAGE (AUTO SCROLL + DELAY SLIDER) -->
+  <section id="zeroPage" class="page">
+    <div class="qr-glass-stage">
+      <div style="display: flex; justify-content: space-between; align-items: baseline;">
+        <span id="slideCounter" class="key-handover-badge">0/0</span>
+        <div class="delay-control">
+          <span>⏱️ Auto delay</span>
+          <input type="range" id="delaySlider" class="delay-slider" min="1" max="8" step="0.5" value="2.8">
+          <span id="delayValueDisplay">2.8 s</span>
+          <button id="autoScrollToggleBtn" class="btn-secondary" style="padding: 8px 18px;">▶ Auto</button>
+        </div>
+      </div>
+      <div id="zeroQrContainer" style="min-height: 280px; display: flex; justify-content: center; margin: 14px 0;"></div>
+      <h3 id="zeroSlideTitle" style="font-weight: 700; margin-top: 12px;">No QR yet</h3>
+      <p id="zeroSlideDesc" style="color: var(--adobe-muted); max-width: 90%; margin: 8px auto;">Generate or import QR codes</p>
+      <div class="button-group">
+        <button id="prevSlideBtn" class="btn-secondary">◀ Previous</button>
+        <button id="nextSlideBtn" class="btn-secondary">Next ▶</button>
+      </div>
+      <p style="font-size: 13px; margin-top: 18px;">✨ Auto scroll follows your delay setting — touch next/prev to pause</p>
+    </div>
+  </section>
+
+  <!-- LIBRARY PAGE (QR GRID) -->
+  <section id="libraryPage" class="page">
+    <div class="adobe-card">
+      <h3>QR Code Gallery</h3>
+      <p>Tap any card for full preview</p>
+      <div id="libraryGrid" class="qr-grid-modern"></div>
+    </div>
+  </section>
+
+  <!-- GENERATOR PAGE -->
+  <section id="generatorPage" class="page">
+    <div class="adobe-card">
+      <h3>✍️ Create QR Code</h3>
+      <label style="font-weight: 700; margin-top: 14px; display: block;">Title</label>
+      <input type="text" id="genName" placeholder="e.g. Invoice #3940" style="width:100%; padding: 14px; border-radius: 28px; border:1px solid #EBDDCB; margin-bottom: 16px;">
+      <label style="font-weight: 700;">Content / URL / Text</label>
+      <textarea id="genText" rows="3" placeholder="Paste any data..." style="width:100%; border-radius: 24px; padding: 14px;"></textarea>
+      <label style="font-weight: 700; margin-top: 14px;">Extra description</label>
+      <textarea id="genDesc" rows="2" placeholder="Helpful note"></textarea>
+      <button class="btn-primary" id="createQrBtn" style="margin-top: 24px;">✨ Generate & Add to Master</button>
+    </div>
+  </section>
+
+  <!-- MASTER PAGE (DRAG & DROP REORDER + EDIT) -->
+  <section id="masterPage" class="page">
+    <div class="adobe-card">
+      <h3>🎯 Master Reorder (Drag & Drop)</h3>
+      <p>Change position as you wish → affects Zero File & Gallery order</p>
+      <div id="masterSortableList" class="master-sort-area"></div>
+      <div class="button-group" style="margin-top: 20px;">
+        <button id="exportMasterBtn" class="btn-secondary">📥 Export Backup</button>
+        <label class="btn-secondary" style="cursor: pointer;">📂 Import JSON<input type="file" id="importFileInput" accept="application/json" hidden></label>
+        <button id="clearAllMasterBtn" class="btn-secondary" style="background:#FEF2F2; color:#b91c1c;">⚠️ Clear All</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="bottom-dock">
+  <button class="nav-icon" data-page="libraryPage">📖 Gallery</button>
+  <button class="nav-icon" data-page="generatorPage">🖌️ Create</button>
+  <button class="nav-icon" data-page="homePage">🏠 Home</button>
+  <button class="nav-icon" data-page="masterPage">⚙️ Master</button>
+</div>
+
+<!-- Fullscreen QR preview -->
+<div id="fullscreenModal" class="modal-overlay">
+  <div class="full-qr-view">
+    <div id="fullQrArea" style="display: flex; justify-content: center; margin-bottom: 20px;"></div>
+    <h3 id="fullTitle"></h3>
+    <p id="fullDescText"></p>
+    <pre id="fullContentPre" style="background:#F4EFE9; padding: 14px; border-radius: 20px; overflow-x:auto;"></pre>
+    <button id="closeFullModalBtn" class="btn-secondary" style="margin-top: 18px;">Close</button>
+  </div>
+</div>
+
+<script>
+  // ---------- DATA ----------
+  const STORAGE_KEY = 'zeroFileProV2';
+  let qrItems = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  let currentZeroIndex = 0;
+  let autoInterval = null;
+  let autoActive = false;
+  let currentDelay = 2.8;
+
+  // helpers
+  function saveToLocal() { localStorage.setItem(STORAGE_KEY, JSON.stringify(qrItems)); renderAllDynamic(); }
+  function clearNode(el) { while(el.firstChild) el.removeChild(el.firstChild); }
+  function buildQR(container, text, size=200) {
+    if(!container) return;
+    clearNode(container);
+    if(text && text.trim() !== "") new QRCode(container, { text: text, width: size, height: size, correctLevel: QRCode.CorrectLevel.H });
+    else container.innerHTML = `<div style="color:#aaa;">⚠️ empty</div>`;
+  }
+
+  // render zero slide
+  function renderZeroSlide() {
+    const container = document.getElementById('zeroQrContainer');
+    const counterSpan = document.getElementById('slideCounter');
+    const titleEl = document.getElementById('zeroSlideTitle');
+    const descEl = document.getElementById('zeroSlideDesc');
+    if(!qrItems.length) {
+      clearNode(container);
+      container.innerHTML = `<div class="qr-preview" style="padding: 40px;">✨ No QR files — create one</div>`;
+      titleEl.innerText = 'Empty timeline';
+      descEl.innerText = 'Use generator or import backup';
+      counterSpan.innerText = `0 / 0`;
+      return;
+    }
+    if(currentZeroIndex >= qrItems.length) currentZeroIndex = 0;
+    const item = qrItems[currentZeroIndex];
+    clearNode(container);
+    const wrapper = document.createElement('div'); wrapper.className = 'qr-preview';
+    container.appendChild(wrapper);
+    buildQR(wrapper, item.text, 240);
+    titleEl.innerText = item.name || 'Untitled';
+    descEl.innerText = item.desc || item.text || 'No description';
+    counterSpan.innerText = `${currentZeroIndex+1} / ${qrItems.length}`;
+  }
+
+  // library grid
+  function renderLibraryGrid() {
+    const grid = document.getElementById('libraryGrid');
+    if(!grid) return;
+    clearNode(grid);
+    if(!qrItems.length){ grid.innerHTML = '<p style="color:var(--adobe-muted)">Empty collection</p>'; return; }
+    qrItems.forEach((item, idx) => {
+      const card = document.createElement('div'); card.className = 'qr-card-modern';
+      const miniDiv = document.createElement('div'); miniDiv.style.display='flex'; miniDiv.style.justifyContent='center'; miniDiv.style.marginBottom='12px';
+      card.appendChild(miniDiv);
+      const title = document.createElement('h4'); title.innerText = item.name; title.style.fontSize='1rem';
+      const smDesc = document.createElement('p'); smDesc.innerText = (item.desc || '').slice(0,45); smDesc.style.fontSize='12px'; smDesc.style.color='#7f6b58';
+      card.appendChild(title); card.appendChild(smDesc);
+      grid.appendChild(card);
+      buildQR(miniDiv, item.text, 110);
+      card.onclick = () => openFullPreview(idx);
+    });
+  }
+
+  // master draggable sort with pure HTML5 drag-drop
+  let dragSrcIndex = null;
+  function renderMasterSortable() {
+    const masterContainer = document.getElementById('masterSortableList');
+    if(!masterContainer) return;
+    clearNode(masterContainer);
+    if(!qrItems.length) { masterContainer.innerHTML = '<div class="master-sort-item">No items — add some QR codes</div>'; return; }
+    qrItems.forEach((item, idx) => {
+      const row = document.createElement('div'); row.className = 'master-sort-item'; row.setAttribute('draggable', 'true'); row.setAttribute('data-index', idx);
+      row.innerHTML = `
+        <div style="display:flex; align-items:center; gap: 12px; flex:1;">
+          <span class="drag-handle">⋮⋮</span>
+          <div><strong>${escapeHtml(item.name)}</strong><br><small style="color:#a77f5c;">${escapeHtml(item.text.slice(0,50))}</small></div>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="editMasterBtn btn-secondary" style="padding:6px 14px;">✏️ Edit</button>
+          <button class="deleteMasterBtn" style="background:#FEE2E2; border:none; border-radius:40px; padding:6px 14px; font-weight:bold;">🗑️</button>
+        </div>
+      `;
+      row.addEventListener('dragstart', (e) => { dragSrcIndex = idx; e.dataTransfer.effectAllowed = 'move'; row.classList.add('dragging'); });
+      row.addEventListener('dragend', (e) => { row.classList.remove('dragging'); dragSrcIndex = null; });
+      row.addEventListener('dragover', (e) => e.preventDefault());
+      row.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if(dragSrcIndex !== null && dragSrcIndex !== idx) {
+          const moved = qrItems[dragSrcIndex];
+          qrItems.splice(dragSrcIndex, 1);
+          qrItems.splice(idx, 0, moved);
+          saveToLocal();
+          renderMasterSortable();
+          if(currentZeroIndex >= qrItems.length) currentZeroIndex = Math.max(0, qrItems.length-1);
+          renderZeroSlide();
+        }
+      });
+      masterContainer.appendChild(row);
+      const editBtn = row.querySelector('.editMasterBtn');
+      const delBtn = row.querySelector('.deleteMasterBtn');
+      editBtn.onclick = (e) => { e.stopPropagation(); editQrItem(idx); };
+      delBtn.onclick = (e) => { e.stopPropagation(); qrItems.splice(idx,1); if(currentZeroIndex >= qrItems.length) currentZeroIndex = Math.max(0, qrItems.length-1); saveToLocal(); };
+    });
+  }
+
+  function editQrItem(index) {
+    const item = qrItems[index];
+    const newName = prompt('Edit QR name', item.name);
+    if(newName !== null) item.name = newName.trim() || 'Untitled';
+    const newText = prompt('Edit QR text/content', item.text);
+    if(newText !== null) item.text = newText.trim() || 'empty';
+    const newDesc = prompt('Edit description', item.desc || '');
+    if(newDesc !== null) item.desc = newDesc;
+    saveToLocal();
+  }
+
+  function openFullPreview(index) {
+    const item = qrItems[index];
+    if(!item) return;
+    const modal = document.getElementById('fullscreenModal');
+    const fullQrDiv = document.getElementById('fullQrArea');
+    buildQR(fullQrDiv, item.text, 220);
+    document.getElementById('fullTitle').innerText = item.name;
+    document.getElementById('fullDescText').innerText = item.desc || '';
+    document.getElementById('fullContentPre').innerText = item.text;
+    modal.classList.add('active');
+  }
+
+  function renderAllDynamic() {
+    renderZeroSlide();
+    renderLibraryGrid();
+    renderMasterSortable();
+  }
+
+  // auto scroll logic with delay reading
+  function startAutoScroll() {
+    if(autoInterval) clearInterval(autoInterval);
+    if(!autoActive || qrItems.length === 0) return;
+    autoInterval = setInterval(() => {
+      if(qrItems.length > 0 && autoActive) {
+        currentZeroIndex = (currentZeroIndex + 1) % qrItems.length;
+        renderZeroSlide();
+      }
+    }, currentDelay * 1000);
+  }
+  function stopAutoScroll() { if(autoInterval) { clearInterval(autoInterval); autoInterval = null; } }
+  function setAutoMode(active) {
+    autoActive = active;
+    const btn = document.getElementById('autoScrollToggleBtn');
+    if(active) { stopAutoScroll(); startAutoScroll(); btn.innerText = '⏸ Stop'; btn.classList.add('btn-primary'); btn.classList.remove('btn-secondary'); }
+    else { stopAutoScroll(); btn.innerText = '▶ Auto'; btn.classList.remove('btn-primary'); btn.classList.add('btn-secondary'); }
+  }
+
+  // event binding
+  document.getElementById('delaySlider')?.addEventListener('input', (e) => {
+    currentDelay = parseFloat(e.target.value);
+    document.getElementById('delayValueDisplay').innerText = currentDelay.toFixed(1) + ' s';
+    if(autoActive) { setAutoMode(true); } // restart with new delay
+  });
+  document.getElementById('autoScrollToggleBtn')?.addEventListener('click', () => { setAutoMode(!autoActive); });
+  document.getElementById('prevSlideBtn')?.addEventListener('click', () => { if(autoActive) setAutoMode(false); if(qrItems.length){ currentZeroIndex = (currentZeroIndex-1+qrItems.length)%qrItems.length; renderZeroSlide(); } });
+  document.getElementById('nextSlideBtn')?.addEventListener('click', () => { if(autoActive) setAutoMode(false); if(qrItems.length){ currentZeroIndex = (currentZeroIndex+1)%qrItems.length; renderZeroSlide(); } });
+  document.getElementById('createQrBtn')?.addEventListener('click', () => {
+    let name = document.getElementById('genName').value.trim();
+    const text = document.getElementById('genText').value.trim();
+    const desc = document.getElementById('genDesc').value.trim();
+    if(!text) { alert('Please enter QR text/content'); return; }
+    if(!name) name = text.slice(0,36);
+    qrItems.unshift({ id: crypto.randomUUID(), name: name, text: text, desc: desc || '', createdAt: new Date().toISOString() });
+    document.getElementById('genName').value = ''; document.getElementById('genText').value = ''; document.getElementById('genDesc').value = '';
+    currentZeroIndex = 0; if(autoActive) setAutoMode(false);
+    saveToLocal();
+    showPage('zeroPage');
+  });
+  document.getElementById('exportMasterBtn')?.addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(qrItems, null,2)], {type:'application/json'});
+    const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='zerofile-export.json'; a.click(); URL.revokeObjectURL(a.href);
+  });
+  document.getElementById('importFileInput')?.addEventListener('change', (e) => {
+    const file = e.target.files[0]; if(!file) return;
+    const reader = new FileReader(); reader.onload = (ev) => { try{ const arr = JSON.parse(ev.target.result); if(Array.isArray(arr)){ qrItems = arr; saveToLocal(); alert('Imported successfully'); } else throw new Error(); } catch(e){ alert('Invalid backup'); } }; reader.readAsText(file);
+  });
+  document.getElementById('clearAllMasterBtn')?.addEventListener('click', () => { if(confirm('Delete all QR codes permanently?')){ qrItems = []; currentZeroIndex=0; if(autoActive) setAutoMode(false); saveToLocal(); } });
+  document.getElementById('closeFullModalBtn')?.addEventListener('click', () => document.getElementById('fullscreenModal').classList.remove('active'));
+  
+  // welcome modal & key handover (extra entry)
+  const welcomeOverlay = document.getElementById('welcomeOverlay');
+  document.getElementById('openZeroFileBtn')?.addEventListener('click', () => { welcomeOverlay.classList.remove('active'); document.querySelector('input[value="zero"]').closest('.toggle-pill').click(); showPage('zeroPage'); });
+  document.getElementById('openLibraryOnlyBtn')?.addEventListener('click', () => { welcomeOverlay.classList.remove('active'); showPage('libraryPage'); });
+  document.getElementById('keyHandoverBtn')?.addEventListener('click', () => { welcomeOverlay.classList.remove('active'); alert('🔑 KEY HANDOVER MODE: Adobe ZeroFile secure handshake — share QR session with master reorder capability.'); showPage('masterPage'); });
+
+  // toggle between zero and home
+  const zeroTogglePill = document.getElementById('toggleZeroFileMode');
+  const homeTogglePill = document.getElementById('toggleHomeMode');
+  zeroTogglePill.addEventListener('click', () => { if(welcomeOverlay.classList.contains('active')) welcomeOverlay.classList.remove('active'); showPage('zeroPage'); zeroTogglePill.classList.add('active'); homeTogglePill.classList.remove('active'); });
+  homeTogglePill.addEventListener('click', () => { showPage('homePage'); homeTogglePill.classList.add('active'); zeroTogglePill.classList.remove('active'); });
+  window.showPage = function(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const target = document.getElementById(pageId);
+    if(target) target.classList.add('active');
+    const titlesMap = { homePage:'Home Studio', zeroPage:'Zero File Timeline', libraryPage:'QR Gallery', generatorPage:'QR Creator', masterPage:'Master Reorder' };
+    document.getElementById('pageDynamicTitle').innerText = titlesMap[pageId] || 'ZeroFile';
+    if(pageId === 'zeroPage' && qrItems.length && autoActive) startAutoScroll();
+    else if(autoActive && pageId !== 'zeroPage') setAutoMode(false);
+  };
+  document.querySelectorAll('.nav-icon').forEach(btn => { btn.addEventListener('click', (e) => { const page = btn.getAttribute('data-page'); if(page) showPage(page); }); });
+  function escapeHtml(str){ return String(str||'').replace(/[&<>]/g, function(m){ if(m === '&') return '&amp;'; if(m === '<') return '&lt;'; if(m === '>') return '&gt;'; return m;}); }
+  
+  // initial render
+  renderAllDynamic();
+  if(qrItems.length === 0) showPage('homePage');
+  else showPage('zeroPage');
+  setAutoMode(false);
+  document.getElementById('delaySlider').value = currentDelay;
+  document.getElementById('delayValueDisplay').innerText = currentDelay + ' s';
+  
+  // service worker register
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(console.warn);
+</script>
+</body>
+</html>
